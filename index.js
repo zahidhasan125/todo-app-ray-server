@@ -29,13 +29,19 @@ async function run() {
         // CRUD for todo app
 
         // Create todo
-
         app.post('/create', async (req, res) => {
             const newToDo = req.body;
             const result = await todoCollections.insertOne(newToDo);
             res.send(result);
         })
 
+        // Read todos
+        app.get('/mytodos', async (req, res) => {
+            const user = req.query.email;
+            const query = {user}
+            const mytodos = await todoCollections.find(query).toArray();
+            res.send(mytodos);
+        })
 
 
     } finally {
