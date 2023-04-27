@@ -54,11 +54,26 @@ async function run() {
             const updateDoc = {
                 $set: { taskName: newTaskName }
             }
-            if (updatingTodo.user === user) {
+            if (updatingTodo && updatingTodo.user === user) {
                 const result = await todoCollections.updateOne(query, updateDoc, option);
                 res.send(result);
             } else {
-                res.status(403).send({ message: "You're not authorized to apply the changes." })
+                res.status(403).send({ message: "You're not authorized to apply the changes." });
+            }
+        })
+
+        // Delete todo
+        app.delete('/delete', async (req, res) => {
+            const todoId = req.query.todoId;
+            const user = req.query.email;
+            const query = { _id: new ObjectId(todoId) };
+            const deletingTodo = await todoCollections.findOne(query);
+            
+            if (deletingTodo && deletingTodo.user === user) {
+                const result = await todoCollections.deleteOne(query);
+                res.send(result);
+            } else {
+                res.status(403).send({ message: "You're not authorized to apply the changes." });
             }
         })
 
