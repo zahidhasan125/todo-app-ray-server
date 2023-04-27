@@ -62,6 +62,19 @@ async function run() {
             res.send({ todoAccessToken: token });
         })
 
+        // User sign up
+
+        app.post('/register', async (req, res) => {
+            const userInfo = req.body;
+            const query = { email: userInfo.email };
+            const userExist = await userCollections.findOne(query);
+
+            if (userExist) {
+                return res.send({message: 'User already exists.'})
+            }
+            const result = await userCollections.insertOne(userInfo);
+            res.send(result);
+        })
 
         // CRUD for todo app
 
