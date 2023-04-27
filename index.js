@@ -4,7 +4,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.voxvdqi.mongodb.net/?retryWrites=true&w=majority`;
 
 app.use(cors());
@@ -38,11 +38,29 @@ async function run() {
         // Read todos
         app.get('/mytodos', async (req, res) => {
             const user = req.query.email;
-            const query = {user}
+            const query = { user }
             const mytodos = await todoCollections.find(query).toArray();
             res.send(mytodos);
         })
 
+        // Update todo
+        app.patch('/update', async (req, res) => {
+            const todoId = req.query.todoId;
+            const user = req.query.email;
+            const newTaskName = req.body.newTaskName;
+            const query = { _id: new ObjectId(todoId) };
+            const updatingTodo = await todoCollections.findOne(query);
+            const option = { upsert: true };
+            const updateDoc = {
+                $set: { taskName: newTaskName }
+            }
+            if (updatingTodo.user === user) {
+                const result = await todoCollections.updateOne(query, updateDoc, option);
+                res.send(result);
+            } else {
+                res.status(403).send({ message: "You're not authorized to apply the changes." })
+            }
+        })
 
     } finally {
 
