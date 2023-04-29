@@ -48,7 +48,7 @@ async function run() {
         const userCollections = client.db('RayToDo').collection('userCollection');
 
         // jwt auth token endpoint
-        
+
         app.get('/jwt', async (req, res) => {
             const user = req.query.email;
             const query = { user };
@@ -57,7 +57,7 @@ async function run() {
             if (!userExist) {
                 return res.status(401).send({ message: 'Unauthorized!' });
             }
-            
+
             const token = jwt.sign({ user }, process.env.TOKEN_SECRET, { expiresIn: '7 days' });
             res.send({ todoAccessToken: token });
         })
@@ -70,23 +70,48 @@ async function run() {
             const userExist = await userCollections.findOne(query);
 
             if (userExist) {
-                return res.send({message: 'User already exists.'})
+                return res.send({ message: 'User already exists.' })
             }
             const result = await userCollections.insertOne(userInfo);
             res.send(result);
         })
 
+        // User login
+
+        app.post('/login', async (req, res) => {
+            const userData = req.body;
+            const email = userData.email;
+            const query = { email };
+            const userExist = await userCollections.findOne(query);
+
+            if (userExist && userExist.pass == userData.pass) {
+                const token = jwt.sign({ email }, process.env.TOKEN_SECRET, { expiresIn: '7 days' });
+                res.send({ todoAccessToken: token });
+            } else {
+                res.send({ todoAccessToken: '' });
+            }
+        })
+
+        // ToDo Group endpoints
+
+        app.get('/group/:id', async (req, res) => {
+            const groupId = parseInt(req.params.id);
+            const query = { groupId };
+            const toDosByGroup = await todoCollections.find(query).toArray();
+            res.send(toDosByGroup);
+        })
+
         // CRUD for todo app
 
         // Create todo
-        app.post('/create', async (req, res) => {
+        app.post('/create', verifyJWT, async (req, res) => {
             const newToDo = req.body;
             const result = await todoCollections.insertOne(newToDo);
             res.send(result);
         })
 
         // Read todos
-        app.get('/mytodos', async (req, res) => {
+        app.get('/mytodos', verifyJWT, async (req, res) => {
             const user = req.query.email;
             const query = { user }
             const mytodos = await todoCollections.find(query).toArray();
@@ -94,7 +119,7 @@ async function run() {
         })
 
         // Update todo
-        app.patch('/update', async (req, res) => {
+        app.patch('/update', verifyJWT, async (req, res) => {
             const todoId = req.query.todoId;
             const user = req.query.email;
             const newTaskName = req.body.newTaskName;
@@ -113,12 +138,12 @@ async function run() {
         })
 
         // Delete todo
-        app.delete('/delete', async (req, res) => {
+        app.delete('/delete', verifyJWT, async (req, res) => {
             const todoId = req.query.todoId;
             const user = req.query.email;
             const query = { _id: new ObjectId(todoId) };
             const deletingTodo = await todoCollections.findOne(query);
-            
+
             if (deletingTodo && deletingTodo.user === user) {
                 const result = await todoCollections.deleteOne(query);
                 res.send(result);
